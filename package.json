@@ -1,20 +1,21 @@
 {
-  "name": "nome-do-seu-projeto",
+  "name": "api",
   "version": "1.0.0",
-  "description": "Descrição do seu projeto",
+  "description": "melhor projeto",
   "main": "api.mjs",
   "scripts": {
     "start": "node api.mjs"
   },
   "keywords": [],
-  "author": "Seu Nome",
+  "author": "come primas",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.21.1",
     "express": "^4.17.1",
     "fluent-ffmpeg": "^2.1.2",
-    "ytdl-core": "^4.6.0",
-    "yt-search": "^1.0.2",
-    "youtube-music-api": "^1.0.0"
+    "youtubedl-core": "^4.6.0",
+    "yt-search": "^2.5.0",
+    "youtube-music-api": "^3.0.0"
   },
   "devDependencies": {}
 }
