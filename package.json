@@ -10,12 +10,12 @@
   "author": "come primas",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.21.1",
-    "express": "^4.17.1",
-    "fluent-ffmpeg": "^2.1.2",
-    "youtubedl-core": "^4.6.0",
-    "yt-search": "^2.5.0",
-    "youtube-music-api": "^1.0.0"
+    "axios": "",
+    "express": "",
+    "fluent-ffmpeg": "",
+    "youtubedl-core":"",
+    "yt-search": "",
+    "youtube-music-api": ""
   },
   "devDependencies": {}
 }
