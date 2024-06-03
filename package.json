@@ -12,7 +12,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "fluent-ffmpeg": "^2.1.2",
-    "youtubedl-core": "^4.6.0"
+    "ytdl-core": "^4.6.0"
   },
   "devDependencies": {}
 }
