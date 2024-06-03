@@ -12,7 +12,8 @@
   "dependencies": {
     "express": "^4.17.1",
     "fluent-ffmpeg": "^2.1.2",
-    "ytdl-core": "^4.6.0"
+    "ytdl-core": "^4.6.0",
+    "yt-search": "^1.0.2"
   },
   "devDependencies": {}
 }
