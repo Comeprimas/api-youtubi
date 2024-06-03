@@ -17,5 +17,10 @@
     "yt-search": "",
     "youtube-music-api": ""
   },
+  "repository": {
+    "ytdl-core": "https://github.com/fent/node-ytdl-core",
+    "yt-search": "https://github.com/talmobi/yt-search",
+    "youtube-music-api": "https://github.com/joshghent/youtube-music-api"
+  },
   "devDependencies": {}
 }
