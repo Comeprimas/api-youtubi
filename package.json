@@ -8,14 +8,16 @@
   "keywords": [],
   "author": "come primas",
   "license": "MIT",
-  "dependencies": {
-    "axios": "",
-    "express": "",
-    "fluent-ffmpeg": "",
-    "youtube-yts": "^2.0.0",
-    "ytdl-core": "^4.11.5",
-    "youtubedl-core": "^4.11.5",
-    "yt-search": "^2.10.4"
+ "dependencies": {
+  "axios": "",
+  "express": "",
+  "fluent-ffmpeg": "",
+  "youtube-yts": "^2.0.0",
+  "ytdl-core": "^4.11.5",
+  "youtubedl-core": "^4.11.5",
+  "yt-search": "^2.10.4",
+  "youtube-music-api": "^1.0.0"
+
   },
   "repository": {
     "ytdl-core": "https://github.com/fent/node-ytdl-core",
