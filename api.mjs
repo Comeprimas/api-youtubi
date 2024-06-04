@@ -8,6 +8,12 @@ import yts from 'yt-search';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Verifica se a pasta 'audio' existe e a cria se não existir
+const audioFolderPath = './audio';
+if (!fs.existsSync(audioFolderPath)) {
+    fs.mkdirSync(audioFolderPath);
+}
+
 class YT {
     static async search(query) {
         const searchResults = await yts(query);
