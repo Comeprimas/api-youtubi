@@ -31,7 +31,7 @@ class YT {
                 ffmpeg(stream)
                     .audioBitrate(128)
                     .save(songPath)
-                    .on('end', resolve)
+                    .on('end', () => resolve(songPath))
                     .on('error', reject);
             });
             return songPath;
@@ -42,11 +42,14 @@ class YT {
 }
 
 app.get('/api/download/mp3', async (req, res) => {
-    const { url, name } = req.query;
+    let { url, name } = req.query;
     try {
         if (!url && !name) {
             throw new Error('Parâmetro URL ou nome é obrigatório');
         }
+
+        url = url ? encodeURI(url) : undefined;
+        name = name ? encodeURI(name) : undefined;
 
         let downloadUrl = url;
         if (name) {
