@@ -6,7 +6,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import yts from 'yt-search';
 
 const app = express();
-const port = process.env.PORT || 1000;
+const port = process.env.PORT || 3000;
 
 const audioFolderPath = './audio';
 if (!fs.existsSync(audioFolderPath)) {
