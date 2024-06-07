@@ -16,8 +16,12 @@ if (!fs.existsSync(audioFolderPath)) {
 
 class YT {
     static async search(query) {
-        const searchResults = await yts(query);
-        return searchResults.videos;
+        try {
+            const searchResults = await yts(query);
+            return searchResults.videos;
+        } catch (error) {
+            throw new Error('Erro ao pesquisar vídeos no YouTube');
+        }
     }
 
     static async downloadMusic(url) {
@@ -33,7 +37,7 @@ class YT {
             });
             return { path: songPath, size: fs.statSync(songPath).size };
         } catch (error) {
-            throw error;
+            throw new Error('Erro ao baixar música');
         }
     }
 }
@@ -41,14 +45,14 @@ class YT {
 app.get('/api/download/mp3', async (req, res) => {
     const { url, name } = req.query;
     if (!url && !name) {
-        return res.status(400).json({ error: 'URL or name parameter is required' });
+        return res.status(400).json({ error: 'Parâmetro URL ou nome é obrigatório' });
     }
     try {
         let downloadUrl = url;
         if (name) {
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
-                return res.status(404).json({ error: 'No results found for the given name' });
+                return res.status(404).json({ error: 'Nenhum resultado encontrado para o nome fornecido' });
             }
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
         }
@@ -56,15 +60,16 @@ app.get('/api/download/mp3', async (req, res) => {
         res.download(result.path, 'download.mp3', (err) => {
             if (err) {
                 console.error(err);
-                return res.status(500).json({ error: 'Failed to download file' });
+                return res.status(500).json({ error: 'Falha ao baixar o arquivo' });
             }
             fs.unlinkSync(result.path);
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Servidor está rodando na porta ${port}`);
 });
