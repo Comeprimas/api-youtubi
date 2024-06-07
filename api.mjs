@@ -1,22 +1,35 @@
 import express from 'express';
+import fs from 'fs';
+import { randomBytes } from 'crypto';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
+import yts from 'yt-search';
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 1000;
 
 class YT {
+    static async search(query) {
+        try {
+            const searchResults = await yts(query);
+            return searchResults.videos;
+        } catch (error) {
+            throw new Error('Erro ao pesquisar vídeos no YouTube');
+        }
+    }
+
     static async downloadMusic(url) {
         try {
             const stream = ytdl(url, { filter: 'audioonly' });
-            return new Promise((resolve, reject) => {
+            const songPath = `./${randomBytes(3).toString('hex')}.mp3`;
+            await new Promise((resolve, reject) => {
                 ffmpeg(stream)
                     .audioBitrate(128)
-                    .format('mp3') // Define o formato como mp3
-                    .on('end', () => resolve())
-                    .on('error', reject)
-                    .pipe();
+                    .save(songPath)
+                    .on('end', () => resolve(songPath))
+                    .on('error', reject);
             });
+            return songPath;
         } catch (error) {
             throw new Error('Erro ao baixar música');
         }
@@ -24,18 +37,33 @@ class YT {
 }
 
 app.get('/api/download/mp3', async (req, res) => {
-    const { url } = req.query;
+    let { url, name } = req.query;
     try {
-        if (!url) {
-            throw new Error('Parâmetro URL é obrigatório');
+        if (!url && !name) {
+            throw new Error('Parâmetro URL ou nome é obrigatório');
         }
 
-        const songStream = await YT.downloadMusic(url);
-        res.set({
-            'Content-Type': 'audio/mpeg',
-            'Content-Disposition': 'attachment; filename="download.mp3"'
+        url = url ? encodeURI(url) : undefined;
+        name = name ? encodeURI(name) : undefined;
+
+        let downloadUrl = url;
+        if (name) {
+            const searchResults = await YT.search(name);
+            if (searchResults.length === 0) {
+                throw new Error('Nenhum resultado encontrado para o nome fornecido');
+            }
+            downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
+        }
+
+        const songPath = await YT.downloadMusic(downloadUrl);
+        res.download(songPath, 'download.mp3', (err) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Falha ao baixar o arquivo' });
+            } else {
+                fs.unlinkSync(songPath); // Excluir o arquivo após o download
+            }
         });
-        songStream.pipe(res); // Envia o arquivo de áudio diretamente como uma resposta para o cliente
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
