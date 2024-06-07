@@ -35,7 +35,7 @@ class YT {
                     .on('end', resolve)
                     .on('error', reject);
             });
-            return { path: songPath, size: fs.statSync(songPath).size };
+            return { title: 'Música', downloadUrl: songPath };
         } catch (error) {
             throw new Error('Erro ao baixar música');
         }
@@ -45,28 +45,22 @@ class YT {
 app.get('/api/download/mp3', async (req, res) => {
     const { url, name } = req.query;
     if (!url && !name) {
-        return res.status(400).json({ error: 'Parâmetro URL ou nome é obrigatório' });
+        return res.status(400).json({ success: false, error: 'Parâmetro URL ou nome é obrigatório' });
     }
     try {
         let downloadUrl = url;
         if (name) {
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
-                return res.status(404).json({ error: 'Nenhum resultado encontrado para o nome fornecido' });
+                return res.status(404).json({ success: false, error: 'Nenhum resultado encontrado para o nome fornecido' });
             }
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
         }
         const result = await YT.downloadMusic(downloadUrl);
-        res.download(result.path, 'download.mp3', (err) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Falha ao baixar o arquivo' });
-            }
-            fs.unlinkSync(result.path);
-        });
+        res.status(200).json({ success: true, message: 'Arquivo baixado com sucesso', title: 'Música', downloadUrl: result.downloadUrl });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        res.status(500).json({ success: false, error: 'Erro interno do servidor' });
     }
 });
 
