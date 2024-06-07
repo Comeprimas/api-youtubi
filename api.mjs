@@ -1,3 +1,4 @@
+Aqui a api 
 import express from 'express';
 import fs from 'fs';
 import { randomBytes } from 'crypto';
@@ -16,12 +17,8 @@ if (!fs.existsSync(audioFolderPath)) {
 
 class YT {
     static async search(query) {
-        try {
-            const searchResults = await yts(query);
-            return searchResults.videos;
-        } catch (error) {
-            throw new Error('Erro ao pesquisar vídeos no YouTube');
-        }
+        const searchResults = await yts(query);
+        return searchResults.videos;
     }
 
     static async downloadMusic(url) {
@@ -35,9 +32,9 @@ class YT {
                     .on('end', resolve)
                     .on('error', reject);
             });
-            return { title: 'Música', downloadUrl: songPath };
+            return { path: songPath, size: fs.statSync(songPath).size };
         } catch (error) {
-            throw new Error('Erro ao baixar música');
+            throw error;
         }
     }
 }
@@ -45,25 +42,30 @@ class YT {
 app.get('/api/download/mp3', async (req, res) => {
     const { url, name } = req.query;
     if (!url && !name) {
-        return res.status(400).json({ success: false, error: 'Parâmetro URL ou nome é obrigatório' });
+        return res.status(400).json({ error: 'URL or name parameter is required' });
     }
     try {
         let downloadUrl = url;
         if (name) {
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
-                return res.status(404).json({ success: false, error: 'Nenhum resultado encontrado para o nome fornecido' });
+                return res.status(404).json({ error: 'No results found for the given name' });
             }
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
         }
         const result = await YT.downloadMusic(downloadUrl);
-        res.status(200).json({ success: true, message: 'Arquivo baixado com sucesso', title: 'Música', downloadUrl: result.downloadUrl });
+        res.download(result.path, 'download.mp3', (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Failed to download file' });
+            }
+            fs.unlinkSync(result.path);
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+        res.status(500).json({ error: error.message });
     }
 });
 
 app.listen(port, () => {
-    console.log(`Servidor está rodando na porta ${port}`);
+    console.log(`Server is running on port ${port}`);
 });
