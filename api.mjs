@@ -21,7 +21,7 @@ class YT {
     static async downloadMusic(url) {
         try {
             const stream = ytdl(url, { filter: 'audioonly' });
-            const songPath = `./${randomBytes(3).toString('hex')}.mp3`;
+            const songPath = `./audio/${randomBytes(3).toString('hex')}.mp3`;
             await new Promise((resolve, reject) => {
                 ffmpeg(stream)
                     .audioBitrate(128)
@@ -56,17 +56,25 @@ app.get('/api/download/mp3', async (req, res) => {
         }
 
         const songPath = await YT.downloadMusic(downloadUrl);
-        res.download(songPath, 'download.mp3', (err) => {
-            if (err) {
-                console.error(err);
-                res.status(500).json({ error: 'Falha ao baixar o arquivo' });
-            } else {
-                fs.unlinkSync(songPath); // Excluir o arquivo após o download
-            }
-        });
+        const fileName = songPath.split('/').pop();
+        const downloadUrl = `http://${req.headers.host}/audio/${fileName}`;
+        res.json({ downloadUrl });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+app.get('/audio/:fileName', (req, res) => {
+    const fileName = req.params.fileName;
+    const filePath = `./audio/${fileName}`;
+    res.download(filePath, 'download.mp3', (err) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Falha ao baixar o arquivo' });
+        } else {
+            fs.unlinkSync(filePath); // Excluir o arquivo após o download
+        }
+    });
 });
 
 app.listen(port, () => {
