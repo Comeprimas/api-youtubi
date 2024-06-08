@@ -47,18 +47,33 @@ app.get('/api/download/mp3', async (req, res) => {
         name = name ? encodeURI(name) : undefined;
 
         let downloadUrl = url;
+        let videoInfo = {}; // Objeto para armazenar informações do vídeo
+
         if (name) {
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
                 throw new Error('Nenhum resultado encontrado para o nome fornecido');
             }
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
+            videoInfo = searchResults[0]; // Armazenar informações do primeiro resultado
+        } else {
+            const videoDetails = await ytdl.getInfo(url);
+            videoInfo = {
+                title: videoDetails.videoDetails.title,
+                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url, // URL da capa do vídeo
+                views: videoDetails.videoDetails.viewCount, // Número de visualizações do vídeo
+                uploadDate: videoDetails.videoDetails.uploadDate, // Data de upload do vídeo
+                lengthSeconds: videoDetails.videoDetails.lengthSeconds // Duração do vídeo em segundos
+                // Você pode adicionar mais informações aqui, se necessário
+            };
         }
 
         const songPath = await YT.downloadMusic(downloadUrl);
         const fileName = songPath.split('/').pop();
         const downloadUrl = `http://${req.headers.host}/audio/${fileName}`;
-        res.json({ downloadUrl });
+
+        // Adicionar informações do vídeo à resposta JSON
+        res.json({ downloadUrl, videoInfo });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
