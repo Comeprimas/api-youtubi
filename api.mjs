@@ -6,7 +6,8 @@ import ffmpeg from 'fluent-ffmpeg';
 import yts from 'yt-search';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
+// Definir variável de ambiente para desativar atualizações do ytdl-core
+process.env.YTDL_NO_UPDATE = '1';
 // Definir __dirname para módulos ES6
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
