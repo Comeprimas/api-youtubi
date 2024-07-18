@@ -1,4 +1,5 @@
-{  "name": "api",  
+{
+  "name": "api",  
   "version": "1.0.0",
   "description": "melhor projeto",
   "main": "api.mjs",
@@ -8,16 +9,15 @@
   "keywords": [],
   "author": "come primas",
   "license": "MIT",
- "dependencies": {
-  "axios": "",
-  "express": "",
-  "fluent-ffmpeg": "",
-  "youtube-yts": "",
-  "ytdl-core": "",
-  "yt-search": "",
-  "youtubedl-core": "",
-  "youtube-music-api": "",
-
+  "dependencies": {
+    "axios": "",
+    "express": "",
+    "fluent-ffmpeg": "",
+    "youtube-yts": "",
+    "ytdl-core": "",
+    "yt-search": "",
+    "youtubedl-core": "",
+    "youtube-music-api": ""
   },
   "repository": {
     "ytdl-core": "https://github.com/fent/node-ytdl-core",
