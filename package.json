@@ -10,8 +10,8 @@
   "license": "MIT",
  "dependencies": {
   "axios": "^0.24.0",
-  "express": ""^4.19.2",",
-  "fluent-ffmpeg": ""^2.1.2",
+  "express": "^4.19.2",",
+  "fluent-ffmpeg": "^2.1.2",
   "youtube-yts": "",
   "ytdl-core": "^4.4.5",
   "yt-search": "^2.10.3"
