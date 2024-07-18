@@ -6,8 +6,10 @@ import ffmpeg from 'fluent-ffmpeg';
 import yts from 'yt-search';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 // Definir variável de ambiente para desativar atualizações do ytdl-core
 process.env.YTDL_NO_UPDATE = '1';
+
 // Definir __dirname para módulos ES6
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,14 +30,19 @@ class YT {
 
     static async downloadMusic(url) {
         try {
+            console.log(`Iniciando download do vídeo: ${url}`);
             const stream = ytdl(url, { filter: 'audioonly' });
             const songPath = path.join(__dirname, 'audio', `${randomBytes(3).toString('hex')}.mp3`);
+            console.log(`Salvando áudio em: ${songPath}`);
             
             await new Promise((resolve, reject) => {
                 ffmpeg(stream)
                     .audioBitrate(128)
                     .save(songPath)
-                    .on('end', () => resolve(songPath))
+                    .on('end', () => {
+                        console.log('Download e conversão finalizados.');
+                        resolve(songPath);
+                    })
                     .on('error', (err) => {
                         console.error('Erro ao converter o vídeo:', err);
                         reject(new Error('Erro ao converter o vídeo'));
@@ -69,13 +76,14 @@ app.get('/api/download/mp3', async (req, res) => {
             throw new Error('Parâmetro URL ou nome é obrigatório');
         }
 
-        url = url ? encodeURI(url) : undefined;
-        name = name ? encodeURI(name) : undefined;
+        url = url ? decodeURIComponent(url) : undefined;
+        name = name ? decodeURIComponent(name) : undefined;
 
         let downloadUrl = url;
         let videoInfo = {};
 
         if (name) {
+            console.log(`Pesquisando vídeo para o nome: ${name}`);
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
                 throw new Error('Nenhum resultado encontrado para o nome fornecido');
@@ -83,6 +91,7 @@ app.get('/api/download/mp3', async (req, res) => {
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
             videoInfo = searchResults[0];
         } else {
+            console.log(`Obtendo informações do vídeo para URL: ${url}`);
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
@@ -124,13 +133,14 @@ app.get('/api/link/mp3', async (req, res) => {
             throw new Error('Parâmetro URL ou nome é obrigatório');
         }
 
-        url = url ? encodeURI(url) : undefined;
-        name = name ? encodeURI(name) : undefined;
+        url = url ? decodeURIComponent(url) : undefined;
+        name = name ? decodeURIComponent(name) : undefined;
 
         let downloadUrl = url;
         let videoInfo = {};
 
         if (name) {
+            console.log(`Pesquisando vídeo para o nome: ${name}`);
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
                 throw new Error('Nenhum resultado encontrado para o nome fornecido');
@@ -138,6 +148,7 @@ app.get('/api/link/mp3', async (req, res) => {
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
             videoInfo = searchResults[0];
         } else {
+            console.log(`Obtendo informações do vídeo para URL: ${url}`);
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
@@ -166,13 +177,14 @@ app.get('/api/link', async (req, res) => {
             throw new Error('Parâmetro URL ou nome é obrigatório');
         }
 
-        url = url ? encodeURI(url) : undefined;
-        name = name ? encodeURI(name) : undefined;
+        url = url ? decodeURIComponent(url) : undefined;
+        name = name ? decodeURIComponent(name) : undefined;
 
         let downloadUrl = url;
         let videoInfo = {};
 
         if (name) {
+            console.log(`Pesquisando vídeo para o nome: ${name}`);
             const searchResults = await YT.search(name);
             if (searchResults.length === 0) {
                 throw new Error('Nenhum resultado encontrado para o nome fornecido');
@@ -180,6 +192,7 @@ app.get('/api/link', async (req, res) => {
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
             videoInfo = searchResults[0];
         } else {
+            console.log(`Obtendo informações do vídeo para URL: ${url}`);
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
