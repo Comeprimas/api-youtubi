@@ -37,34 +37,40 @@ class YT {
         }
     }
 
-    static async downloadMusic(url) {
-        try {
-            console.log(`Iniciando download do vídeo: ${url}`);
-            const stream = ytdl(url, { filter: 'audioonly' });
-            const songPath = path.join(audioDir, `${randomBytes(3).toString('hex')}.mp3`);
-            console.log(`Salvando áudio em: ${songPath}`);
+  static async downloadMusic(url) {
+    try {
+        console.log(`Iniciando download do vídeo: ${url}`);
+        const stream = ytdl(url, { 
+            filter: 'audioonly',
+            requestOptions: {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                }
+            }
+        });
+        const songPath = path.join(audioDir, `${randomBytes(3).toString('hex')}.mp3`);
+        console.log(`Salvando áudio em: ${songPath}`);
 
-            await new Promise((resolve, reject) => {
-                ffmpeg(stream)
-                    .audioBitrate(128)
-                    .save(songPath)
-                    .on('end', () => {
-                        console.log('Download e conversão finalizados.');
-                        resolve(songPath);
-                    })
-                    .on('error', (err) => {
-                        console.error('Erro ao converter o vídeo:', err);
-                        reject(new Error('Erro ao converter o vídeo'));
-                    });
-            });
+        await new Promise((resolve, reject) => {
+            ffmpeg(stream)
+                .audioBitrate(128)
+                .save(songPath)
+                .on('end', () => {
+                    console.log('Download e conversão finalizados.');
+                    resolve(songPath);
+                })
+                .on('error', (err) => {
+                    console.error('Erro ao converter o vídeo:', err);
+                    reject(new Error('Erro ao converter o vídeo'));
+                });
+        });
 
-            return songPath;
-        } catch (error) {
-            console.error('Erro ao baixar música:', error);
-            throw new Error('Erro ao baixar música');
-        }
+        return songPath;
+    } catch (error) {
+        console.error('Erro ao baixar música:', error);
+        throw new Error('Erro ao baixar música');
     }
-}
+  }
 
 // Informações sobre o uso da API e créditos
 const apiInfo = {
