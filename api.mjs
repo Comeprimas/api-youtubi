@@ -17,6 +17,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 1000;
 
+// Garantir que o diretório de áudio exista
+const audioDir = path.join(__dirname, 'audio');
+if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir);
+    console.log('Diretório de áudio criado:', audioDir);
+} else {
+    console.log('Diretório de áudio já existe:', audioDir);
+}
+
 class YT {
     static async search(query) {
         try {
@@ -32,9 +41,9 @@ class YT {
         try {
             console.log(`Iniciando download do vídeo: ${url}`);
             const stream = ytdl(url, { filter: 'audioonly' });
-            const songPath = path.join(__dirname, 'audio', `${randomBytes(3).toString('hex')}.mp3`);
+            const songPath = path.join(audioDir, `${randomBytes(3).toString('hex')}.mp3`);
             console.log(`Salvando áudio em: ${songPath}`);
-            
+
             await new Promise((resolve, reject) => {
                 ffmpeg(stream)
                     .audioBitrate(128)
@@ -115,7 +124,7 @@ app.get('/api/download/mp3', async (req, res) => {
 
 app.get('/audio/:fileName', (req, res) => {
     const fileName = req.params.fileName;
-    const filePath = path.join(__dirname, 'audio', fileName);
+    const filePath = path.join(audioDir, fileName);
     res.download(filePath, 'download.mp3', (err) => {
         if (err) {
             console.error('Erro ao baixar arquivo:', err);
