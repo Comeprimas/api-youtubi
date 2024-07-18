@@ -36,6 +36,18 @@ class YT {
     }
 }
 
+// Informações sobre o uso da API e créditos
+const apiInfo = {
+    mensagem: 'Bem-vindo à API de download de músicas do YouTube',
+    instrucoes: 'Para baixar uma música, utilize os endpoints /api/download/mp3 ou /api/link/mp3.',
+    creditos: 'Desenvolvido por Luanzin Dev',
+    proibido: 'Proibida a venda ou comercialização desta API.'
+};
+
+app.get('/', (req, res) => {
+    res.json(apiInfo);
+});
+
 app.get('/api/download/mp3', async (req, res) => {
     let { url, name } = req.query;
     try {
@@ -47,7 +59,7 @@ app.get('/api/download/mp3', async (req, res) => {
         name = name ? encodeURI(name) : undefined;
 
         let downloadUrl = url;
-        let videoInfo = {}; // Objeto para armazenar informações do vídeo
+        let videoInfo = {};
 
         if (name) {
             const searchResults = await YT.search(name);
@@ -55,25 +67,23 @@ app.get('/api/download/mp3', async (req, res) => {
                 throw new Error('Nenhum resultado encontrado para o nome fornecido');
             }
             downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
-            videoInfo = searchResults[0]; // Armazenar informações do primeiro resultado
+            videoInfo = searchResults[0];
         } else {
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
-                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url, // URL da capa do vídeo
-                views: videoDetails.videoDetails.viewCount, // Número de visualizações do vídeo
-                uploadDate: videoDetails.videoDetails.uploadDate, // Data de upload do vídeo
-                lengthSeconds: videoDetails.videoDetails.lengthSeconds // Duração do vídeo em segundos
-                // Você pode adicionar mais informações aqui, se necessário
+                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url,
+                views: videoDetails.videoDetails.viewCount,
+                uploadDate: videoDetails.videoDetails.uploadDate,
+                lengthSeconds: videoDetails.videoDetails.lengthSeconds
             };
         }
 
         const songPath = await YT.downloadMusic(downloadUrl);
         const fileName = songPath.split('/').pop();
-        const downloadUrl = `http://${req.headers.host}/audio/${fileName}`;
+        const downloadUrlResponse = `http://${req.headers.host}/audio/${fileName}`;
 
-        // Adicionar informações do vídeo à resposta JSON
-        res.json({ downloadUrl, videoInfo });
+        res.json({ downloadUrl: downloadUrlResponse, videoInfo });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -87,9 +97,87 @@ app.get('/audio/:fileName', (req, res) => {
             console.error(err);
             res.status(500).json({ error: 'Falha ao baixar o arquivo' });
         } else {
-            fs.unlinkSync(filePath); // Excluir o arquivo após o download
+            fs.unlinkSync(filePath);
         }
     });
+});
+
+app.get('/api/link/mp3', async (req, res) => {
+    let { url, name } = req.query;
+    try {
+        if (!url && !name) {
+            throw new Error('Parâmetro URL ou nome é obrigatório');
+        }
+
+        url = url ? encodeURI(url) : undefined;
+        name = name ? encodeURI(name) : undefined;
+
+        let downloadUrl = url;
+        let videoInfo = {};
+
+        if (name) {
+            const searchResults = await YT.search(name);
+            if (searchResults.length === 0) {
+                throw new Error('Nenhum resultado encontrado para o nome fornecido');
+            }
+            downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
+            videoInfo = searchResults[0];
+        } else {
+            const videoDetails = await ytdl.getInfo(url);
+            videoInfo = {
+                title: videoDetails.videoDetails.title,
+                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url,
+                views: videoDetails.videoDetails.viewCount,
+                uploadDate: videoDetails.videoDetails.uploadDate,
+                lengthSeconds: videoDetails.videoDetails.lengthSeconds
+            };
+        }
+
+        const songPath = await YT.downloadMusic(downloadUrl);
+        const fileName = songPath.split('/').pop();
+        const downloadUrlResponse = `http://${req.headers.host}/audio/${fileName}`;
+
+        res.json({ downloadUrl: downloadUrlResponse, videoInfo });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/link', async (req, res) => {
+    let { url, name } = req.query;
+    try {
+        if (!url && !name) {
+            throw new Error('Parâmetro URL ou nome é obrigatório');
+        }
+
+        url = url ? encodeURI(url) : undefined;
+        name = name ? encodeURI(name) : undefined;
+
+        let downloadUrl = url;
+        let videoInfo = {};
+
+        if (name) {
+            const searchResults = await YT.search(name);
+            if (searchResults.length === 0) {
+                throw new Error('Nenhum resultado encontrado para o nome fornecido');
+            }
+            downloadUrl = `https://www.youtube.com/watch?v=${searchResults[0].videoId}`;
+            videoInfo = searchResults[0];
+        } else {
+            const videoDetails = await ytdl.getInfo(url);
+            videoInfo = {
+                title: videoDetails.videoDetails.title,
+                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url,
+                views: videoDetails.videoDetails.viewCount,
+                uploadDate: videoDetails.videoDetails.uploadDate,
+                lengthSeconds: videoDetails.videoDetails.lengthSeconds
+            };
+        }
+
+        res.json({ downloadUrl, videoInfo });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(port, () => {
