@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
 import yts from 'yt-search';
+import path from 'path';
 
 const app = express();
 const port = process.env.PORT || 1000;
@@ -14,6 +15,7 @@ class YT {
             const searchResults = await yts(query);
             return searchResults.videos;
         } catch (error) {
+            console.error('Erro ao pesquisar vídeos no YouTube:', error);
             throw new Error('Erro ao pesquisar vídeos no YouTube');
         }
     }
@@ -21,18 +23,22 @@ class YT {
     static async downloadMusic(url) {
         try {
             const stream = ytdl(url, { filter: 'audioonly' });
-            const songPath = `./audio/${randomBytes(3).toString('hex')}.mp3`;
+            const songPath = path.join(__dirname, 'audio', `${randomBytes(3).toString('hex')}.mp3`);
             
             await new Promise((resolve, reject) => {
                 ffmpeg(stream)
                     .audioBitrate(128)
                     .save(songPath)
                     .on('end', () => resolve(songPath))
-                    .on('error', (err) => reject(new Error(`Erro ao converter o vídeo: ${err.message}`)));
+                    .on('error', (err) => {
+                        console.error('Erro ao converter o vídeo:', err);
+                        reject(new Error('Erro ao converter o vídeo'));
+                    });
             });
 
             return songPath;
         } catch (error) {
+            console.error('Erro ao baixar música:', error);
             throw new Error('Erro ao baixar música');
         }
     }
@@ -74,7 +80,7 @@ app.get('/api/download/mp3', async (req, res) => {
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
-                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url,
+                thumbnail: videoDetails.videoDetails.thumbnails[0].url,
                 views: videoDetails.videoDetails.viewCount,
                 uploadDate: videoDetails.videoDetails.uploadDate,
                 lengthSeconds: videoDetails.videoDetails.lengthSeconds
@@ -82,7 +88,7 @@ app.get('/api/download/mp3', async (req, res) => {
         }
 
         const songPath = await YT.downloadMusic(downloadUrl);
-        const fileName = songPath.split('/').pop();
+        const fileName = path.basename(songPath);
         const downloadUrlResponse = `http://${req.headers.host}/audio/${fileName}`;
 
         res.json({ downloadUrl: downloadUrlResponse, videoInfo });
@@ -94,7 +100,7 @@ app.get('/api/download/mp3', async (req, res) => {
 
 app.get('/audio/:fileName', (req, res) => {
     const fileName = req.params.fileName;
-    const filePath = `./audio/${fileName}`;
+    const filePath = path.join(__dirname, 'audio', fileName);
     res.download(filePath, 'download.mp3', (err) => {
         if (err) {
             console.error('Erro ao baixar arquivo:', err);
@@ -129,7 +135,7 @@ app.get('/api/link/mp3', async (req, res) => {
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
-                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url,
+                thumbnail: videoDetails.videoDetails.thumbnails[0].url,
                 views: videoDetails.videoDetails.viewCount,
                 uploadDate: videoDetails.videoDetails.uploadDate,
                 lengthSeconds: videoDetails.videoDetails.lengthSeconds
@@ -137,7 +143,7 @@ app.get('/api/link/mp3', async (req, res) => {
         }
 
         const songPath = await YT.downloadMusic(downloadUrl);
-        const fileName = songPath.split('/').pop();
+        const fileName = path.basename(songPath);
         const downloadUrlResponse = `http://${req.headers.host}/audio/${fileName}`;
 
         res.json({ downloadUrl: downloadUrlResponse, videoInfo });
@@ -171,7 +177,7 @@ app.get('/api/link', async (req, res) => {
             const videoDetails = await ytdl.getInfo(url);
             videoInfo = {
                 title: videoDetails.videoDetails.title,
-                thumbnail: videoDetails.videoDetails.thumbnail.thumbnails[0].url,
+                thumbnail: videoDetails.videoDetails.thumbnails[0].url,
                 views: videoDetails.videoDetails.viewCount,
                 uploadDate: videoDetails.videoDetails.uploadDate,
                 lengthSeconds: videoDetails.videoDetails.lengthSeconds
