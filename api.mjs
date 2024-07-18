@@ -22,13 +22,15 @@ class YT {
         try {
             const stream = ytdl(url, { filter: 'audioonly' });
             const songPath = `./audio/${randomBytes(3).toString('hex')}.mp3`;
+            
             await new Promise((resolve, reject) => {
                 ffmpeg(stream)
                     .audioBitrate(128)
                     .save(songPath)
                     .on('end', () => resolve(songPath))
-                    .on('error', reject);
+                    .on('error', (err) => reject(new Error(`Erro ao converter o vídeo: ${err.message}`)));
             });
+
             return songPath;
         } catch (error) {
             throw new Error('Erro ao baixar música');
@@ -85,6 +87,7 @@ app.get('/api/download/mp3', async (req, res) => {
 
         res.json({ downloadUrl: downloadUrlResponse, videoInfo });
     } catch (error) {
+        console.error('Erro ao processar solicitação:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -94,7 +97,7 @@ app.get('/audio/:fileName', (req, res) => {
     const filePath = `./audio/${fileName}`;
     res.download(filePath, 'download.mp3', (err) => {
         if (err) {
-            console.error(err);
+            console.error('Erro ao baixar arquivo:', err);
             res.status(500).json({ error: 'Falha ao baixar o arquivo' });
         } else {
             fs.unlinkSync(filePath);
@@ -139,6 +142,7 @@ app.get('/api/link/mp3', async (req, res) => {
 
         res.json({ downloadUrl: downloadUrlResponse, videoInfo });
     } catch (error) {
+        console.error('Erro ao processar solicitação:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -176,6 +180,7 @@ app.get('/api/link', async (req, res) => {
 
         res.json({ downloadUrl, videoInfo });
     } catch (error) {
+        console.error('Erro ao processar solicitação:', error);
         res.status(500).json({ error: error.message });
     }
 });
