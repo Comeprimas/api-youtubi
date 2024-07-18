@@ -5,6 +5,11 @@ import ytdl from 'ytdl-core';
 import ffmpeg from 'fluent-ffmpeg';
 import yts from 'yt-search';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Definir __dirname para módulos ES6
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 1000;
