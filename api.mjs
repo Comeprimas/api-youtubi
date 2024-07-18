@@ -45,6 +45,8 @@ class YT {
             requestOptions: {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Connection': 'keep-alive',
                 }
             }
         });
@@ -71,8 +73,8 @@ class YT {
         throw new Error('Erro ao baixar música');
     }
   }
+}
 
-// Informações sobre o uso da API e créditos
 const apiInfo = {
     mensagem: 'Bem-vindo à API de download de músicas do YouTube',
     instrucoes: 'Para baixar uma música, utilize os endpoints /api/download/mp3 ou /api/link/mp3.',
@@ -219,12 +221,11 @@ app.get('/api/link', async (req, res) => {
         }
 
         res.json({ downloadUrl, videoInfo });
-    } catch (error) {
-        console.error('Erro ao processar solicitação:', error);
-        res.status(500).json({ error: error.message });
-    }
+    } catch (error)console.error('Erro ao processar solicitação:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.listen(port, () => {
-    console.log(`Servidor está rodando na porta ${port}`);
+  console.log(`Servidor está rodando na porta ${port}`);
 });
