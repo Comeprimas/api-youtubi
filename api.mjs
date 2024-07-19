@@ -1,5 +1,3 @@
-process.env.YTDL_NO_UPDATE = 'true';
-
 import express from 'express';
 import fs from 'fs';
 import { randomBytes } from 'crypto';
@@ -9,6 +7,10 @@ import yts from 'yt-search';
 
 const app = express();
 const port = process.env.PORT || 1000;
+
+if (!fs.existsSync('./audio')) {
+    fs.mkdirSync('./audio');
+}
 
 class YT {
     static async search(query) {
@@ -29,7 +31,10 @@ class YT {
                     .audioBitrate(128)
                     .save(songPath)
                     .on('end', () => resolve(songPath))
-                    .on('error', reject);
+                    .on('error', (err) => {
+                        console.error('Erro ao processar áudio com ffmpeg:', err);
+                        reject(err);
+                    });
             });
             return songPath;
         } catch (error) {
@@ -69,14 +74,18 @@ app.get('/api/download/mp3', async (req, res) => {
 app.get('/audio/:fileName', (req, res) => {
     const fileName = req.params.fileName;
     const filePath = `./audio/${fileName}`;
-    res.download(filePath, 'download.mp3', (err) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Falha ao baixar o arquivo' });
-        } else {
-            fs.unlinkSync(filePath); // Excluir o arquivo após o download
-        }
-    });
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, 'download.mp3', (err) => {
+            if (err) {
+                console.error('Erro ao enviar o arquivo:', err);
+                res.status(500).json({ error: 'Falha ao baixar o arquivo' });
+            } else {
+                fs.unlinkSync(filePath); // Excluir o arquivo após o download
+            }
+        });
+    } else {
+        res.status(404).json({ error: 'Arquivo não encontrado' });
+    }
 });
 
 app.listen(port, () => {
