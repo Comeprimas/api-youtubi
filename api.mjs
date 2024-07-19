@@ -70,10 +70,10 @@ app.get('/api/download/mp3', async (req, res) => {
 
         const songPath = await YT.downloadMusic(downloadUrl);
         const fileName = songPath.split('/').pop();
-        const downloadUrl = `http://${req.headers.host}/audio/${fileName}`;
+        const audioDownloadUrl = `http://${req.headers.host}/audio/${fileName}`; // Renomeado para evitar conflito
 
         // Adicionar informações do vídeo à resposta JSON
-        res.json({ downloadUrl, videoInfo });
+        res.json({ downloadUrl: audioDownloadUrl, videoInfo });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
