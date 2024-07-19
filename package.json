@@ -15,7 +15,7 @@
     "fluent-ffmpeg": "",
     "youtube-yts": "",
     "ytdl-core": "^4.4.5",
-    "yt-search": "^2.7.3"
+    "yt-search": "^2.7.3",
     "node-id3": "",
     "ytsr": "",
     "node-youtube-music": "",
