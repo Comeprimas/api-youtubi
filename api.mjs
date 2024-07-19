@@ -1,3 +1,4 @@
+process.env.YTDL_NO_UPDATE = 'true';
 import express from 'express';
 import fs from 'fs';
 import { randomBytes } from 'crypto';
