@@ -1,122 +1,122 @@
 import express from 'express';
+import ytdl from 'youtubedl-core';
+import { searchMusics } from 'node-youtube-music'; // Tentando uma importação específica
+import ffmpeg from 'fluent-ffmpeg';
+import NodeID3 from 'node-id3';
 import fs from 'fs';
-import path from 'path';
-import ytdl from 'ytdl-core';
-import ytsr from 'ytsr';
-import { fileURLToPath } from 'url';
-import { v4 as uuidv4 } from 'uuid';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { randomBytes } from 'crypto';
 
 const app = express();
-const PORT = 3000;
+const port = 3000;
 
-const downloadsDir = path.join(__dirname, 'downloads');
+const ytIdRegex = /(?:youtube\.com\/\S*(?:(?:\/e(?:mbed))?\/|watch\?(?:\S*?&?v\=))|youtu\.be\/)([a-zA-Z0-9_-]{6,11})/;
 
-// Garante que o diretório de downloads exista
-if (!fs.existsSync(downloadsDir)) {
-    fs.mkdirSync(downloadsDir);
+class YT {
+    static isYTUrl = (url) => ytIdRegex.test(url);
+
+    static getVideoID = (url) => {
+        if (!this.isYTUrl(url)) throw new Error('is not YouTube URL');
+        return ytIdRegex.exec(url)[1];
+    };
+
+    static WriteTags = async (filePath, Metadata) => {
+        NodeID3.write(
+            {
+                title: Metadata.Title,
+                artist: Metadata.Artist,
+                originalArtist: Metadata.Artist,
+                image: {
+                    mime: 'jpeg',
+                    type: {
+                        id: 3,
+                        name: 'front cover',
+                    },
+                    imageBuffer: (await fetchBuffer(Metadata.Image)).buffer,
+                    description: `Cover of ${Metadata.Title}`,
+                },
+                album: Metadata.Album,
+                year: Metadata.Year || ''
+            },
+            filePath
+        );
+    };
+
+    static searchTrack = async (query) => {
+        try {
+            let ytMusic = await searchMusics(query); // Usando a importação específica
+            return ytMusic.map(track => ({
+                isYtMusic: true,
+                title: `${track.title} - ${track.artists.map(x => x.name).join(' ')}`,
+                artist: track.artists.map(x => x.name).join(' '),
+                id: track.youtubeId,
+                url: 'https://youtu.be/' + track.youtubeId,
+                album: track.album,
+                duration: {
+                    seconds: track.duration.totalSeconds,
+                    label: track.duration.label
+                },
+                image: track.thumbnailUrl.replace('w120-h120', 'w600-h600')
+            }));
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    static downloadMusic = async (query) => {
+        try {
+            const getTrack = await this.searchTrack(query);
+            const search = getTrack[0];
+            const videoInfo = await ytdl.getInfo('https://www.youtube.com/watch?v=' + search.id, { lang: 'id' });
+            let stream = ytdl(search.id, { filter: 'audioonly', quality: 140 });
+            let songPath = `./XliconMedia/audio/${randomBytes(3).toString('hex')}.mp3`;
+            stream.on('error', (err) => console.log(err));
+
+            const file = await new Promise((resolve) => {
+                ffmpeg(stream)
+                    .audioFrequency(44100)
+                    .audioChannels(2)
+                    .audioBitrate(128)
+                    .audioCodec('libmp3lame')
+                    .audioQuality(5)
+                    .toFormat('mp3')
+                    .save(songPath)
+                    .on('end', () => resolve(songPath));
+            });
+
+            await this.WriteTags(file, {
+                Title: search.title,
+                Artist: search.artist,
+                Image: search.image,
+                Album: search.album,
+                Year: videoInfo.videoDetails.publishDate.split('-')[0]
+            });
+
+            return {
+                meta: search,
+                path: file,
+                size: fs.statSync(songPath).size
+            };
+        } catch (error) {
+            throw new Error(error);
+        }
+    };
 }
 
-app.use('/downloads', express.static(downloadsDir));
-
 app.get('/api/mp3', async (req, res) => {
-    const name = req.query.name;
+    const { name } = req.query;
     if (!name) {
-        console.error('No name provided');
-        return res.status(400).json({ error: 'No name provided' });
+        return res.status(400).json({ error: 'Name parameter is required' });
     }
-
-    console.log(`Searching for MP3 for: ${name}`);
-
     try {
-        const results = await ytsr(name, { limit: 1 });
-        const video = results.items.find(item => item.type === 'video');
-
-        if (!video) {
-            console.error(`No results found for: ${name}`);
-            return res.status(404).json({ error: 'No results found' });
-        }
-
-        const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
-        console.log(`Video URL found: ${videoUrl}`);
-
-        const id = uuidv4();
-        const filePath = path.join(downloadsDir, `${id}.mp3`);
-        const writeStream = fs.createWriteStream(filePath);
-
-        console.log(`Downloading MP3 from ${videoUrl} to ${filePath}`);
-
-        const stream = ytdl(videoUrl, { filter: 'audioonly' });
-
-        stream.pipe(writeStream);
-
-        stream.on('end', async () => {
-            console.log(`Successfully downloaded MP3: ${filePath}`);
-
-            res.download(filePath, `${id}.mp3`, async (err) => {
-                if (err) {
-                    console.error(`Error sending file: ${err.message}`);
-                    return res.status(500).json({ error: 'Error sending file', details: err.message });
-                }
-
-                console.log(`File sent successfully: ${filePath}`);
-
-                try {
-                    await fs.promises.unlink(filePath);
-                    console.log(`File deleted successfully: ${filePath}`);
-                } catch (deleteErr) {
-                    console.error(`Error deleting file: ${deleteErr.message}`);
-                }
-            });
-        });
-
-        stream.on('error', (err) => {
-            console.error(`Error downloading MP3: ${err.message}`);
-            return res.status(500).json({ error: 'Error downloading MP3', details: err.message });
-        });
-    } catch (err) {
-        console.error(`Error processing request: ${err.message}`);
-        return res.status(500).json({ error: 'Error processing request', details: err.message });
+        const result = await YT.downloadMusic(name);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/link/mp3', async (req, res) => {
-    const name = req.query.name;
-    if (!name) {
-        console.error('No name provided');
-        return res.status(400).json({ error: 'No name provided' });
-    }
-
-    console.log(`Searching for MP3 link for: ${name}`);
-
-    try {
-        const results = await ytsr(name, { limit: 1 });
-        const video = results.items.find(item => item.type === 'video');
-
-        if (!video) {
-            console.error(`No results found for: ${name}`);
-            return res.status(404).json({ error: 'No results found' });
-        }
-
-        console.log(`Video URL found: ${video.url}`);
-
-        res.json({
-            downloadLink: `/downloads/${video.id}.mp3`,
-            title: video.title,
-            description: video.description,
-            thumbnail: video.bestThumbnail.url,
-            views: video.views,
-            duration: video.duration,
-            author: video.author.name,
-        });
-    } catch (err) {
-        console.error(`Error processing request: ${err.message}`);
-        return res.status(500).json({ error: 'Error processing request', details: err.message });
-    }
+app.listen(port, () => {
+    console.log(`API is running on http://localhost:${port}`);
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+export default app;
