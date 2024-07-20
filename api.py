@@ -27,9 +27,11 @@ def download_video(url, format):
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
+            print(f"Downloaded info dict: {info_dict}")
             filename = ydl.prepare_filename(info_dict)
             if format == 'mp3':
                 filename = filename.rsplit('.', 1)[0] + '.mp3'
+            print(f"Final filename: {filename}")
             return filename
     except Exception as e:
         print(f"Error downloading video: {e}")
@@ -57,12 +59,10 @@ def download(format):
 
     try:
         return send_file(filename, as_attachment=True)
-    except Exception as e:
-        print(f"Error sending file: {e}")
-        return jsonify({"error": "Failed to send file."}), 500
     finally:
         if filename and os.path.exists(filename):
             os.remove(filename)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
