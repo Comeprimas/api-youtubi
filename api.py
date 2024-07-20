@@ -9,7 +9,7 @@ def search_video(query):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             search_result = ydl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
-            return search_result['webpage_url']
+            return search_result
         except Exception as e:
             print(f"Error searching video: {e}")
             return None
@@ -32,10 +32,66 @@ def download_video(url, format):
             if format == 'mp3':
                 filename = filename.rsplit('.', 1)[0] + '.mp3'
             print(f"Final filename: {filename}")
-            return filename
+            return filename, info_dict
     except Exception as e:
         print(f"Error downloading video: {e}")
-        return None
+        return None, None
+
+@app.route('/')
+def home():
+    return """
+    <h1>api-youtubii</h1>
+    <p><strong>Descrição:</strong> Esta API permite que você baixe vídeos do YouTube em formato MP4 ou MP3.</p>
+    <p><strong>Como usar:</strong></p>
+    <ul>
+        <li><code>GET /api/mp3?name=<em>nome_do_video</em></code> - Baixa o áudio do vídeo em formato MP3.</li>
+        <li><code>GET /api/mp4?name=<em>nome_do_video</em></code> - Baixa o vídeo em formato MP4.</li>
+        <li><code>GET /api/mp3?url=<em>url_do_video</em></code> - Baixa o áudio do vídeo em formato MP3 a partir da URL.</li>
+        <li><code>GET /api/mp4?url=<em>url_do_video</em></code> - Baixa o vídeo em formato MP4 a partir da URL.</li>
+    </ul>
+    <p><strong>Informações:</strong> Proibido vender esta API.</p>
+    <p><strong>Criador:</strong> Luanzin dev</p>
+    """
+
+@app.route('/link/', methods=['GET'])
+def get_video_details():
+    name = request.args.get('name')
+    url = request.args.get('url')
+
+    if not name and not url:
+        return jsonify({"error": "Missing 'name' or 'url' parameter."}), 400
+
+    if name:
+        video_info = search_video(name)
+        if not video_info:
+            return jsonify({"error": "Video not found."}), 404
+        url = video_info['webpage_url']
+        video_details = {
+            "resultado": {
+                "título": video_info.get('title', 'N/A'),
+                "thumb": video_info.get('thumbnail', 'N/A'),
+                "canal": video_info.get('uploader', 'N/A'),
+                "publicado": video_info.get('upload_date', 'N/A'),
+                "visualizações": video_info.get('view_count', 'N/A'),
+                "link": url
+            }
+        }
+    elif url:
+        video_info = download_video(url, 'mp3')[1]  # Dummy download to get info
+        if not video_info:
+            return jsonify({"error": "Failed to retrieve video details."}), 500
+        video_details = {
+            "resultado": {
+                "título": video_info.get('title', 'N/A'),
+                "thumb": video_info.get('thumbnail', 'N/A'),
+                "canal": video_info.get('uploader', 'N/A'),
+                "publicado": video_info.get('upload_date', 'N/A'),
+                "visualizações": video_info.get('view_count', 'N/A'),
+                "link": url
+            }
+        }
+
+    return jsonify(video_details)
 
 @app.route('/api/<format>', methods=['GET'])
 def download(format):
@@ -49,11 +105,12 @@ def download(format):
         return jsonify({"error": "Missing 'name' or 'url' parameter."}), 400
 
     if name:
-        url = search_video(name)
-        if not url:
+        video_info = search_video(name)
+        if not video_info:
             return jsonify({"error": "Video not found."}), 404
+        url = video_info['webpage_url']
 
-    filename = download_video(url, format)
+    filename, info_dict = download_video(url, format)
     if not filename or not os.path.exists(filename):
         return jsonify({"error": "Failed to download video."}), 500
 
@@ -64,5 +121,4 @@ def download(format):
             os.remove(filename)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True)
